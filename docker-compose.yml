@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  web:
+    image: php:8.2-apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+      # Mount data folder explicitly so we have write permissions for SQLite
+      - ./data:/var/www/data
+    environment:
+      - DB_PATH=/var/www/data/vulnmart.db
+    # We need to make sure the container has sqlite3 installed and pdo_sqlite enabled
+    # The default php:8.2-apache image doesn't have pdo_sqlite by default, we might need a custom Dockerfile if we strictly use PDO.
+    # Alternatively, we can just use a simple build context.
+    build:
+      context: .
+      dockerfile: Dockerfile
