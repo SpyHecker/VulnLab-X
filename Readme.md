@@ -1,190 +1,41 @@
-# Vulnerable E-Commerce Web Application (Cybersecurity Training Lab)
+# VulnMart 🛒💥
 
-## Overview
+**VulnMart** is an intentionally vulnerable e-commerce web application built for security professionals, developers, and ethical hackers to practice their skills in a realistic environment. 
 
-This project is an intentionally vulnerable e-commerce web application built using PHP and MySQL. It is designed as a hands-on learning platform for students and cybersecurity enthusiasts to understand, exploit, and fix common web application vulnerabilities.
+## 🎯 The Idea
 
-Unlike traditional demo apps, this platform simulates a real-world e-commerce environment with authentication, product management, and transaction flows, making it ideal for practical security training.
+The goal of VulnMart is to simulate a real-world, modern web application that contains a variety of common (and some complex) security flaws. Unlike simple "hack me" challenges, VulnMart aims to provide a realistic shopping experience with products, user accounts, shopping carts, checkout processes, and administrative dashboards—all ridden with carefully crafted vulnerabilities.
 
----
+### Key Features
+- **User Roles:** Customers, Sellers, and Administrators.
+- **Shopping Experience:** Product catalog, search functionality, reviews, and a shopping cart.
+- **Checkout Process:** Order placement, mock payment gateway integration, and order history.
+- **Admin Dashboard:** Product management, user management, and system logs.
 
-## Objective
+## 🐛 Planned Vulnerabilities
 
-The primary goal of this project is to:
+VulnMart will incorporate vulnerabilities from the OWASP Top 10 and beyond, including:
 
-* Teach how real-world web vulnerabilities occur
-* Provide a safe environment to practice exploitation techniques
-* Demonstrate secure coding practices by comparing vulnerable and fixed implementations
-* Help learners think like both attackers and defenders
+1. **SQL Injection (SQLi):** In product search and login mechanisms.
+2. **Cross-Site Scripting (XSS):** Stored XSS in product reviews and reflected XSS in search results.
+3. **Insecure Direct Object Reference (IDOR):** Accessing other users' orders and profiles.
+4. **Broken Authentication:** Weak password policies, session fixation, and lack of rate limiting.
+5. **Cross-Site Request Forgery (CSRF):** Updating user details or changing passwords without proper tokens.
+6. **Server-Side Request Forgery (SSRF):** In a feature that fetches product images from external URLs.
+7. **XML External Entity (XXE):** In the bulk product upload functionality for sellers.
+8. **Insecure Deserialization:** In session management or API payloads.
+9. **Business Logic Flaws:** Manipulating cart prices, applying negative discount codes, or race conditions during checkout.
+10. **Misconfigurations:** Exposed administrative interfaces, default credentials, and verbose error messages.
 
----
+## 🛠️ Proposed Tech Stack
 
-## Key Features
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript.
+- **Backend:** PHP.
+- **Database:** SQLite3.
+- **Infrastructure:** Docker and Docker Compose (php:apache).
 
-* User registration and login system
-* Product browsing and cart functionality
-* Admin panel for product management
-* REST API endpoints (for advanced testing)
-* Multiple vulnerability modules
-* Difficulty levels (Low / Medium / High)
-* Attack logging and monitoring dashboard (planned)
-
----
-
-## Implemented Vulnerabilities
-
-This application intentionally includes the following vulnerabilities:
-
-### 1. SQL Injection (SQLi)
-
-* Login and search functionality
-* Demonstrates authentication bypass and data extraction
-
-### 2. Cross-Site Scripting (XSS)
-
-* Reflected and stored XSS in input fields
-* Demonstrates client-side code injection
-
-### 3. Cross-Site Request Forgery (CSRF)
-
-* Sensitive actions like password change
-* Demonstrates unauthorized action execution
-
-### 4. Insecure Direct Object Reference (IDOR)
-
-* Accessing other users’ data by modifying IDs
-* Demonstrates broken access control
-
-### 5. File Upload Vulnerability
-
-* Uploading malicious files (e.g., PHP shells)
-* Demonstrates remote code execution risks
-
-### 6. Command Injection
-
-* Executing system commands via input fields
-
-### 7. Authentication & Session Flaws
-
-* Weak session handling
-* Predictable tokens
-
-### 8. Business Logic Flaws
-
-* Price manipulation
-* Coupon abuse
-* Unauthorized order access
-
-### 9. API & JWT Vulnerabilities (Planned)
-
-* Token tampering
-* Broken authentication
+## 🚀 Getting Started
+*(Instructions will be added once the initial codebase is implemented)*
 
 ---
-
-## Technology Stack
-
-* Backend: PHP (Core PHP)
-* Database: MySQL
-* Web Server: Apache
-* Containerization: Docker
-* Optional Tools: phpMyAdmin
-
----
-
-## Project Structure
-
-```
-vuln-ecommerce/
-│
-├── app/
-│   ├── index.php
-│   ├── login.php
-│   ├── register.php
-│   ├── dashboard.php
-│   ├── config/
-│   │   └── db.php
-│   ├── modules/
-│   │   ├── sqli.php
-│   │   ├── xss.php
-│   │   ├── csrf.php
-│   │   ├── idor.php
-│   │   └── upload.php
-│   └── assets/
-│
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## How It Works
-
-Each module is designed to:
-
-1. Introduce a vulnerability
-2. Allow the user to exploit it
-3. Provide hints and explanations
-4. Show a secure implementation
-
----
-
-## Learning Outcomes
-
-By working with this project, users will:
-
-* Understand how vulnerabilities are introduced in code
-* Learn how attackers exploit insecure systems
-* Gain hands-on experience with penetration testing
-* Learn how to secure applications using best practices
-
----
-
-## Safety Notice
-
-⚠️ This application is intentionally vulnerable.
-
-* Run only in a local environment (Docker recommended)
-* Do not deploy on public servers
-* Use strictly for educational purposes
-
----
-
-## Future Enhancements
-
-* AI-based vulnerability explanation system
-* Real-time attack monitoring dashboard
-* Integration with security tools (Burp Suite, etc.)
-* Gamified learning (levels, scoring system)
-* Multi-user lab environment
-
----
-
-## Target Audience
-
-* Cybersecurity students
-* Ethical hacking beginners
-* Developers learning secure coding
-* CTF players
-
----
-
-## Contribution
-
-Contributions are welcome:
-
-* Add new vulnerabilities
-* Improve UI/UX
-* Enhance security explanations
-
----
-
-## License
-
-This project is for educational use only.
-
----
-
-## Author
-
-Developed as part of a cybersecurity learning initiative to bridge the gap between theory and real-world application security.
+*Disclaimer: VulnMart is for educational purposes only. Do not deploy this application on a public-facing server or use these techniques on systems you do not have permission to test.*
