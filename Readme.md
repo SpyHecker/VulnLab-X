@@ -35,7 +35,47 @@ VulnMart will incorporate vulnerabilities from the OWASP Top 10 and beyond, incl
 - **Infrastructure:** Docker and Docker Compose (php:apache).
 
 ## 🚀 Getting Started
-*(Instructions will be added once the initial codebase is implemented)*
+
+### Prerequisites
+- Docker and Docker Compose installed on your system.
+
+### Running with Docker
+
+1. **Build and start the application in the background:**
+   ```bash
+   docker-compose up --build -d
+   ```
+2. **Access the application:**
+   Open your browser and navigate to `http://localhost:8080`.
+
+3. **Initialize the Database:**
+   To set up the initial SQLite database and seed data, navigate to `http://localhost:8080/init_db.php`.
+
+4. **View logs (optional):**
+   ```bash
+   docker-compose logs -f
+   ```
+
+5. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+### Running Locally (Without Docker)
+
+1. Ensure you have PHP and SQLite extensions installed locally.
+2. Navigate to the `src` directory:
+   ```bash
+   cd src
+   ```
+3. Start the PHP built-in server:
+   ```bash
+   php -S localhost:8080
+   ```
+4. **Access the application:**
+   Open your browser and navigate to `http://localhost:8080`.
+5. **Initialize the Database:**
+   Navigate to `http://localhost:8080/init_db.php` to set up the database and seed data.
 
 ---
 *Disclaimer: VulnMart is for educational purposes only. Do not deploy this application on a public-facing server or use these techniques on systems you do not have permission to test.*
