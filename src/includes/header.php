@@ -5,6 +5,7 @@
  * Pages may set $pageTitle before including this file.
  */
 
+$currentUser = current_user();
 $pageTitle = $pageTitle ?? 'Shop';
 $flashMessage = flash();
 ?>
@@ -23,7 +24,13 @@ $flashMessage = flash();
 
         <nav class="nav">
             <a href="/">Shop</a>
-            <a class="nav__cta" href="/login.php">Log in</a>
+            <?php if ($currentUser): ?>
+                <a href="/profile.php"><?= h($currentUser['username']) ?></a>
+                <a class="nav__cta" href="/logout.php">Log out</a>
+            <?php else: ?>
+                <a href="/login.php">Log in</a>
+                <a class="nav__cta" href="/register.php">Register</a>
+            <?php endif; ?>
         </nav>
     </div>
 </header>

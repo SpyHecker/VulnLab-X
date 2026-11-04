@@ -567,3 +567,18 @@ pre.output {
     padding: 1rem 1.25rem;
   }
 }
+
+/* Checkboxes ------------------------------------------------------------ */
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+.checkbox input {
+  width: auto;
+  margin: 0;
+}
