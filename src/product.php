@@ -110,6 +110,28 @@ require __DIR__ . '/includes/header.php';
                 <?php endif; ?>
                 <span>Product #<?= (int) $product['id'] ?></span>
             </div>
+
+            <form method="post" action="/cart.php" class="row" style="gap: 0.75rem; align-items: flex-end;">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                <?php
+                // VULNERABILITY [LOGIC-1]: the unit price is submitted by the
+                // browser and stored in the cart unchanged. Editing this value
+                // (or the hidden field below) sets your own price.
+                ?>
+                <input type="hidden" name="price" value="<?= h($product['price']) ?>">
+
+                <div class="form-group" style="margin: 0; width: 120px;">
+                    <label for="qty">Quantity</label>
+                    <input id="qty" type="number" name="qty" value="1">
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <button type="submit" class="auto-width">Add to cart</button>
+                </div>
+            </form>
+
+            <p class="form-hint">Free delivery on orders over <?= money(150) ?>.</p>
         </div>
     </article>
 

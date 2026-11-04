@@ -242,3 +242,111 @@ function log_activity(string $action, string $message): void
         // Logging must never break the request.
     }
 }
+
+/* -------------------------------------------------------------------------
+ * Shopping cart
+ *
+ * The cart lives in the session. Lines are keyed by product id and keep the
+ * price that was sent by the browser when the product was added.
+ * ---------------------------------------------------------------------- */
+
+function cart(): array
+{
+    if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
+        $_SESSION['cart'] = [];
+    }
+
+    return $_SESSION['cart'];
+}
+
+function cart_add(int $productId, string $name, float $price, int $quantity, string $image = ''): void
+{
+    $cart = cart();
+
+    if (isset($cart[$productId])) {
+        $cart[$productId]['qty'] += $quantity;
+    } else {
+        $cart[$productId] = [
+            'name' => $name,
+            'price' => $price,
+            'qty' => $quantity,
+            'image' => $image,
+        ];
+    }
+
+    $_SESSION['cart'] = $cart;
+}
+
+function cart_set_quantity(int $productId, int $quantity): void
+{
+    $cart = cart();
+
+    if ($quantity === 0) {
+        unset($cart[$productId]);
+    } elseif (isset($cart[$productId])) {
+        $cart[$productId]['qty'] = $quantity;
+    }
+
+    $_SESSION['cart'] = $cart;
+}
+
+function cart_remove(int $productId): void
+{
+    $cart = cart();
+    unset($cart[$productId]);
+    $_SESSION['cart'] = $cart;
+}
+
+function cart_clear(): void
+{
+    $_SESSION['cart'] = [];
+    // Coupons are discarded together with the cart.
+    unset($_SESSION['coupons']);
+}
+
+function cart_count(): int
+{
+    $count = 0;
+
+    foreach (cart() as $item) {
+        $count += (int) $item['qty'];
+    }
+
+    return $count;
+}
+
+function cart_total(): float
+{
+    $total = 0.0;
+
+    foreach (cart() as $item) {
+        $total += (float) $item['price'] * (int) $item['qty'];
+    }
+
+    return round($total, 2);
+}
+
+/**
+ * Discounts collected from the coupon form, applied one after another.
+ */
+function cart_coupons(): array
+{
+    return $_SESSION['coupons'] ?? [];
+}
+
+function cart_discount(float $subtotal): float
+{
+    $discount = 0.0;
+
+    foreach (cart_coupons() as $coupon) {
+        if (($coupon['type'] ?? 'percent') === 'percent') {
+            // VULNERABILITY [LOGIC-3]: every coupon is applied to the full
+            // subtotal, stacking is unlimited and the result is never capped.
+            $discount += $subtotal * ((float) $coupon['value'] / 100);
+        } else {
+            $discount += (float) $coupon['value'];
+        }
+    }
+
+    return round($discount, 2);
+}
