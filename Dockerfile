@@ -1,16 +1,25 @@
 FROM php:8.2-apache
 
-# Install SQLite3 development packages
-RUN apt-get update && apt-get install -y \
-    sqlite3 \
-    libsqlite3-dev \
+# pdo_sqlite backs the database and libxml (bundled with PHP) powers the
+# seller XML import, so only the SQLite extension needs to be compiled in.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends sqlite3 libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_sqlite \
+    && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
-# Install and enable pdo_sqlite
-RUN docker-php-ext-install pdo pdo_sqlite
+ENV DB_PATH=/var/www/data/vulnmart.db
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Application code. docker compose bind-mounts ./src over this directory for
+# live editing, but a plain `docker run` of the image works too.
+COPY src/ /var/www/html/
+COPY docker/entrypoint.sh /usr/local/bin/vulnmart-entrypoint
 
-# We will mount /var/www/html via docker-compose, but we need a writable data folder
-RUN mkdir -p /var/www/data && chown -R www-data:www-data /var/www/data
+RUN chmod +x /usr/local/bin/vulnmart-entrypoint \
+    && mkdir -p /var/www/data /var/www/html/uploads \
+    && chown -R www-data:www-data /var/www/data /var/www/html/uploads
+
+EXPOSE 80
+
+ENTRYPOINT ["vulnmart-entrypoint"]
+CMD ["apache2-foreground"]
