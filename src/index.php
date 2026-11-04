@@ -1,26 +1,41 @@
 <?php
 /**
- * Store front: product catalogue and search.
+ * Store front: product catalogue, category filter and search.
  */
 require_once __DIR__ . '/config.php';
 
 $search = trim((string) ($_GET['q'] ?? ''));
+$category = trim((string) ($_GET['category'] ?? ''));
 $products = [];
 $error = '';
 
 try {
+    $categories = $db->query('SELECT DISTINCT category FROM products ORDER BY category')->fetchAll(PDO::FETCH_COLUMN);
+
+    $conditions = [];
+
     if ($search !== '') {
         // VULNERABILITY [SQLI-1]: the search term is concatenated straight into
         // the query, so `' UNION SELECT ...` style payloads are executed.
-        $sql = "SELECT * FROM products
-                WHERE name LIKE '%$search%' OR description LIKE '%$search%'
-                ORDER BY name";
-
-        $products = $db->query($sql)->fetchAll();
-    } else {
-        $products = $db->query('SELECT * FROM products ORDER BY name')->fetchAll();
+        $conditions[] = "(name LIKE '%$search%' OR description LIKE '%$search%')";
     }
+
+    if ($category !== '') {
+        // VULNERABILITY [SQLI-5]: the category filter has the same problem.
+        $conditions[] = "category = '$category'";
+    }
+
+    $sql = 'SELECT * FROM products';
+
+    if ($conditions) {
+        $sql .= ' WHERE ' . implode(' AND ', $conditions);
+    }
+
+    $sql .= ' ORDER BY name';
+
+    $products = $db->query($sql)->fetchAll();
 } catch (PDOException $e) {
+    $categories = [];
     // VULNERABILITY [MISC-1]: the raw driver error (including the query text)
     // is displayed to the visitor.
     $error = $e->getMessage();
@@ -37,8 +52,19 @@ require __DIR__ . '/includes/header.php';
 
 <form class="search-bar" method="get" action="/">
     <input type="search" name="q" placeholder="Search products…" value="<?= h($search) ?>" autocomplete="off">
+    <?php if ($category !== ''): ?>
+        <input type="hidden" name="category" value="<?= h($category) ?>">
+    <?php endif; ?>
     <button type="submit">Search</button>
 </form>
+
+<div class="row" style="margin-bottom: 1.5rem;">
+    <a class="badge" href="/">All</a>
+    <?php foreach ($categories as $availableCategory): ?>
+        <a class="badge<?= $availableCategory === $category ? ' badge--admin' : '' ?>"
+           href="/?category=<?= urlencode($availableCategory) ?>"><?= h($availableCategory) ?></a>
+    <?php endforeach; ?>
+</div>
 
 <?php if ($search !== ''): ?>
     <?php // VULNERABILITY [XSS-1]: the search term is reflected without escaping. ?>
