@@ -101,6 +101,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <td><?= h($product['seller'] ?? '—') ?></td>
             <td>
                 <div class="table__actions">
+                    <a class="button small secondary" href="/seller/product_edit.php?id=<?= (int) $product['id'] ?>">Edit</a>
                     <form method="post" action="/admin/products.php">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">

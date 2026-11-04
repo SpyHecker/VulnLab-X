@@ -28,6 +28,9 @@ $flashMessage = flash();
             <?php if ($currentUser): ?>
                 <a href="/orders.php">Orders</a>
                 <a href="/profile.php"><?= h($currentUser['username']) ?></a>
+                <?php if (is_seller()): ?>
+                    <a href="/seller/">Seller</a>
+                <?php endif; ?>
                 <?php if (is_admin()): ?>
                     <a href="/admin/">Admin</a>
                 <?php endif; ?>
