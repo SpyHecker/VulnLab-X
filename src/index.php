@@ -1,79 +1,76 @@
 <?php
-require_once 'config.php';
+/**
+ * Store front: product catalogue and search.
+ */
+require_once __DIR__ . '/config.php';
 
-$search = isset($_GET['q']) ? $_GET['q'] : '';
+$search = trim((string) ($_GET['q'] ?? ''));
 $products = [];
+$error = '';
 
 try {
-    if ($search) {
-        // VULNERABILITY: SQL Injection
-        // We concatenate the search string directly into the SQL query
-        $query = "SELECT * FROM products WHERE name LIKE '%" . $search . "%' OR description LIKE '%" . $search . "%'";
-        $stmt = $db->query($query);
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($search !== '') {
+        // VULNERABILITY [SQLI-1]: the search term is concatenated straight into
+        // the query, so `' UNION SELECT ...` style payloads are executed.
+        $sql = "SELECT * FROM products
+                WHERE name LIKE '%$search%' OR description LIKE '%$search%'
+                ORDER BY name";
+
+        $products = $db->query($sql)->fetchAll();
     } else {
-        $stmt = $db->query("SELECT * FROM products");
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $products = $db->query('SELECT * FROM products ORDER BY name')->fetchAll();
     }
 } catch (PDOException $e) {
+    // VULNERABILITY [MISC-1]: the raw driver error (including the query text)
+    // is displayed to the visitor.
     $error = $e->getMessage();
 }
+
+$pageTitle = 'Shop';
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>VulnMart - Home</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app-container">
-    <header class="app-header">
-        <div class="logo">
-            <a href="/">🛒 VulnMart</a>
-        </div>
-        <nav>
-            <a href="/">Home</a>
-            <a href="login.php">Login</a>
-        </nav>
-    </header>
 
-    <main class="main-content">
-        <h2>Products</h2>
-        
-        <form class="search-bar" method="GET" action="index.php">
-            <input type="text" name="q" placeholder="Search products..." value="<?php echo htmlspecialchars($search); ?>">
-            <button type="submit">Search</button>
-        </form>
-
-        <?php if ($search): ?>
-            <!-- VULNERABILITY: Reflected XSS -->
-            <!-- The search parameter is echoed directly to the page without htmlspecialchars -->
-            <p>Showing results for: <?php echo $search; ?></p>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-            <p style="color:red;">Database Error: <?php echo htmlspecialchars($error); ?></p>
-        <?php endif; ?>
-
-        <div class="product-grid">
-            <?php if (count($products) > 0): ?>
-                <?php foreach ($products as $product): ?>
-                    <div class="product-card">
-                        <h3><a href="product.php?id=<?php echo $product['id']; ?>"><?php echo htmlspecialchars($product['name']); ?></a></h3>
-                        <p class="price">$<?php echo htmlspecialchars($product['price']); ?></p>
-                        <p><?php echo htmlspecialchars($product['description']); ?></p>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p>No products found.</p>
-            <?php endif; ?>
-        </div>
-    </main>
-
-    <footer class="app-footer">
-        <p>VulnMart - Intentionally Vulnerable PHP Application.</p>
-    </footer>
+<div class="page-head">
+    <h1>Products</h1>
+    <p class="muted"><?= count($products) ?> item(s) available</p>
 </div>
-</body>
-</html>
+
+<form class="search-bar" method="get" action="/">
+    <input type="search" name="q" placeholder="Search products…" value="<?= h($search) ?>" autocomplete="off">
+    <button type="submit">Search</button>
+</form>
+
+<?php if ($search !== ''): ?>
+    <?php // VULNERABILITY [XSS-1]: the search term is reflected without escaping. ?>
+    <p class="search-summary">Showing results for: <strong><?= $search ?></strong></p>
+<?php endif; ?>
+
+<?php if ($error !== ''): ?>
+    <div class="alert alert--error"><strong>Query failed:</strong> <?= h($error) ?></div>
+<?php endif; ?>
+
+<?php if (!$products): ?>
+    <p class="empty-state">No products found.</p>
+<?php else: ?>
+    <div class="product-grid">
+        <?php foreach ($products as $product): ?>
+            <article class="product-card">
+                <a class="product-card__link" href="/product.php?id=<?= h($product['id']) ?>">
+                    <img class="product-card__image"
+                         src="<?= h(product_image_url($product['image'])) ?>"
+                         alt="<?= h($product['name']) ?>">
+                </a>
+                <div class="product-card__body">
+                    <h2 class="product-card__title">
+                        <a class="product-card__link" href="/product.php?id=<?= h($product['id']) ?>"><?= h($product['name']) ?></a>
+                    </h2>
+                    <p class="product-card__description"><?= h($product['description']) ?></p>
+                    <p class="price"><?= money($product['price']) ?></p>
+                    <span class="badge"><?= h($product['category']) ?></span>
+                </div>
+            </article>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>

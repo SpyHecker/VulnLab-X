@@ -1,0 +1,35 @@
+<?php
+/**
+ * Shared page header.
+ *
+ * Pages may set $pageTitle before including this file.
+ */
+
+$pageTitle = $pageTitle ?? 'Shop';
+$flashMessage = flash();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= h($pageTitle) ?> &middot; <?= APP_NAME ?></title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<header class="app-header">
+    <div class="app-header__inner">
+        <a class="brand" href="/"><span class="brand__mark">🛒</span> <?= APP_NAME ?></a>
+
+        <nav class="nav">
+            <a href="/">Shop</a>
+            <a class="nav__cta" href="/login.php">Log in</a>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+<?php if ($flashMessage): ?>
+    <?php // VULNERABILITY [XSS-5]: flash messages are stored and printed without escaping. ?>
+    <div class="alert alert--<?= h($flashMessage['type']) ?>"><?= $flashMessage['message'] ?></div>
+<?php endif; ?>

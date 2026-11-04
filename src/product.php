@@ -1,72 +1,67 @@
 <?php
-require_once 'config.php';
+/**
+ * Product detail page.
+ */
+require_once __DIR__ . '/config.php';
 
-$id = $_GET['id'] ?? null;
+$id = $_GET['id'] ?? '';
 $product = null;
 $error = '';
 
-if ($id) {
+if ($id === '') {
+    $error = 'No product id was supplied.';
+} else {
     try {
-        // VULNERABILITY: SQL Injection
-        // We concatenate the id directly into the query
-        $query = "SELECT * FROM products WHERE id = " . $id;
-        $stmt = $db->query($query);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+        // VULNERABILITY [SQLI-2]: the id coming from the query string is
+        // concatenated into the query without casting or binding it.
+        $product = $db->query('SELECT * FROM products WHERE id = ' . $id)->fetch();
+
         if (!$product) {
-            $error = "Product not found.";
+            $error = 'Product not found.';
         }
     } catch (PDOException $e) {
-        $error = "Database Error: " . $e->getMessage();
+        // VULNERABILITY [MISC-1]: verbose database errors.
+        $error = 'Query failed: ' . $e->getMessage();
     }
-} else {
-    $error = "No product ID specified.";
 }
 
+$pageTitle = $product['name'] ?? 'Product';
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>VulnMart - Product</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app-container">
-    <header class="app-header">
-        <div class="logo">
-            <a href="/">🛒 VulnMart</a>
+
+<?php if ($error !== ''): ?>
+    <div class="alert alert--error"><?= h($error) ?></div>
+    <p><a class="button secondary" href="/">Back to the shop</a></p>
+<?php else: ?>
+    <p class="muted"><a href="/">← Back to the shop</a></p>
+
+    <article class="product-detail">
+        <div>
+            <?php
+            // VULNERABILITY [SSRF-2]: remote image URLs are rendered as-is. If
+            // the application ever fetched the image server side, the same
+            // field would be a server side request forgery primitive.
+            ?>
+            <img class="product-detail__image"
+                 src="<?= h(product_image_url($product['image'])) ?>"
+                 alt="<?= h($product['name']) ?>">
         </div>
-        <nav>
-            <a href="/">Home</a>
-            <a href="login.php">Login</a>
-        </nav>
-    </header>
 
-    <main class="main-content">
-        <?php if ($error): ?>
-            <p style="color:red;"><?php echo htmlspecialchars($error); ?></p>
-        <?php elseif ($product): ?>
-            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <h2><?php echo htmlspecialchars($product['name']); ?></h2>
-                <p class="price">$<?php echo htmlspecialchars($product['price']); ?></p>
-                <p><?php echo htmlspecialchars($product['description']); ?></p>
-                
-                <div style="margin-top: 2rem;">
-                    <!-- VULNERABILITY: IDOR/LFI/SSRF vector -->
-                    <!-- In a real app this might read a file from disk based on user input, or fetch a URL -->
-                    <!-- Here we just display the image name, but an attacker might try to load external URLs if the app fetches it server-side -->
-                    <img src="<?php echo htmlspecialchars(strpos($product['image'], 'http') === 0 ? $product['image'] : '/images/' . $product['image']); ?>" alt="Product Image" style="max-width: 100%; border-radius: 4px;">
-                </div>
-                
-                <button class="auto-width" style="margin-top: 2rem;">Add to Cart</button>
+        <div class="stack">
+            <div>
+                <h1><?= h($product['name']) ?></h1>
+                <p class="price"><?= money($product['price']) ?></p>
             </div>
-        <?php endif; ?>
-    </main>
 
-    <footer class="app-footer">
-        <p>VulnMart - Intentionally Vulnerable PHP Application.</p>
-    </footer>
-</div>
-</body>
-</html>
+            <p><?= h($product['description']) ?></p>
+
+            <div class="product-detail__meta">
+                <span class="badge"><?= h($product['category']) ?></span>
+                <span><?= (int) $product['stock'] ?> in stock</span>
+                <span>Product #<?= (int) $product['id'] ?></span>
+            </div>
+        </div>
+    </article>
+<?php endif; ?>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>
