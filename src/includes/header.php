@@ -28,6 +28,9 @@ $flashMessage = flash();
             <?php if ($currentUser): ?>
                 <a href="/orders.php">Orders</a>
                 <a href="/profile.php"><?= h($currentUser['username']) ?></a>
+                <?php if (is_admin()): ?>
+                    <a href="/admin/">Admin</a>
+                <?php endif; ?>
                 <a class="nav__cta" href="/logout.php">Log out</a>
             <?php else: ?>
                 <a href="/login.php">Log in</a>

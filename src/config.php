@@ -34,6 +34,7 @@ define('DATA_DIR', getenv('DATA_DIR') ?: dirname(__DIR__) . '/data');
 define('DB_FILE', getenv('DB_PATH') ?: DATA_DIR . '/vulnmart.db');
 define('UPLOAD_DIR', APP_ROOT . '/uploads');
 
+require_once APP_ROOT . '/includes/classes.php';
 require_once APP_ROOT . '/includes/functions.php';
 require_once APP_ROOT . '/includes/schema.php';
 
