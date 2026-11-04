@@ -81,3 +81,55 @@ class Cache
         }
     }
 }
+
+/**
+ * Visitor preferences, stored in a (serialised) cookie.
+ */
+class UserPreferences
+{
+    /** @var string Preferred colour scheme. */
+    public $theme = 'light';
+
+    /** @var string Interface language. */
+    public $language = 'en';
+
+    /** @var array Recently viewed product ids. */
+    public $recent = [];
+
+    /**
+     * Read the preferences from the `prefs` cookie.
+     */
+    public static function load(): self
+    {
+        if (!empty($_COOKIE['prefs'])) {
+            $decoded = base64_decode((string) $_COOKIE['prefs'], true);
+
+            if ($decoded !== false) {
+                // VULNERABILITY [DESER-1]: the cookie is base64 encoded but not
+                // signed, and its contents are handed to unserialize(). Any
+                // object in the payload is instantiated, which makes the classes
+                // in this file available as a gadget chain.
+                $prefs = @unserialize($decoded);
+
+                if ($prefs instanceof self) {
+                    return $prefs;
+                }
+            }
+        }
+
+        return new self();
+    }
+
+    /**
+     * Persist the preferences back into the cookie.
+     */
+    public function save(): void
+    {
+        setcookie(
+            'prefs',
+            base64_encode(serialize($this)),
+            time() + 60 * 60 * 24 * 365,
+            '/'
+        );
+    }
+}

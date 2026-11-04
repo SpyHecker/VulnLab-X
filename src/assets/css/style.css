@@ -582,3 +582,42 @@ pre.output {
   width: auto;
   margin: 0;
 }
+
+/* Dark theme (stored in the preferences cookie) -------------------------- */
+
+body.theme-dark {
+  --bg-color: #1e272e;
+  --card-color: #2f3542;
+  --text-color: #f1f2f6;
+  --muted-color: #a4b0be;
+  --border-color: #57606f;
+}
+
+body.theme-dark .table th,
+body.theme-dark .stat {
+  background: #353b48;
+}
+
+body.theme-dark .table td,
+body.theme-dark .review {
+  border-color: #3d4451;
+}
+
+body.theme-dark .form-group input,
+body.theme-dark .form-group textarea,
+body.theme-dark .form-group select,
+body.theme-dark .search-bar input {
+  background: #353b48;
+  color: #f1f2f6;
+  border-color: #57606f;
+}
+
+body.theme-dark .alert {
+  background: #2f3542;
+  color: #f1f2f6;
+}
+
+body.theme-dark .empty-state,
+body.theme-dark .product-card__image {
+  background: #2f3542;
+}

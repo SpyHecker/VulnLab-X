@@ -6,6 +6,7 @@
  */
 
 $currentUser = current_user();
+$preferences = UserPreferences::load();
 $pageTitle = $pageTitle ?? 'Shop';
 $flashMessage = flash();
 ?>
@@ -17,7 +18,7 @@ $flashMessage = flash();
     <title><?= h($pageTitle) ?> &middot; <?= APP_NAME ?></title>
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body>
+<body class="theme-<?= h($preferences->theme) ?>">
 <header class="app-header">
     <div class="app-header__inner">
         <a class="brand" href="/"><span class="brand__mark">🛒</span> <?= APP_NAME ?></a>
@@ -39,6 +40,14 @@ $flashMessage = flash();
                 <a href="/login.php">Log in</a>
                 <a class="nav__cta" href="/register.php">Register</a>
             <?php endif; ?>
+
+            <form method="post" action="/api/prefs.php" class="inline-form">
+                <input type="hidden" name="redirect" value="<?= h($_SERVER['REQUEST_URI'] ?? '/') ?>">
+                <input type="hidden" name="theme" value="<?= $preferences->theme === 'dark' ? 'light' : 'dark' ?>">
+                <button type="submit" class="small secondary" style="background: transparent; color: #dfe4ea; border: 1px solid rgba(255,255,255,0.3);">
+                    <?= $preferences->theme === 'dark' ? '☀️' : '🌙' ?>
+                </button>
+            </form>
         </nav>
     </div>
 </header>
