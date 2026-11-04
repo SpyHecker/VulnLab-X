@@ -141,7 +141,8 @@ require __DIR__ . '/includes/header.php';
         </table>
 
         <p style="margin-top: 1.5rem;">
-            <a class="button" href="/">Continue shopping</a>
+            <a class="button" href="/orders.php">View all orders</a>
+            <a class="button secondary" href="/">Continue shopping</a>
         </p>
     </div>
 <?php else: ?>

@@ -26,6 +26,7 @@ $flashMessage = flash();
             <a href="/">Shop</a>
             <a href="/cart.php">Cart<?php if (cart_count() > 0): ?><span class="nav__badge"><?= cart_count() ?></span><?php endif; ?></a>
             <?php if ($currentUser): ?>
+                <a href="/orders.php">Orders</a>
                 <a href="/profile.php"><?= h($currentUser['username']) ?></a>
                 <a class="nav__cta" href="/logout.php">Log out</a>
             <?php else: ?>
