@@ -9,8 +9,6 @@ maps to the OWASP Top 10.
 > SQL injection, remote code execution through file writes and uploads, missing authorisation checks.
 > Never deploy it on a public host, and only test systems you own or have written permission to test.
 
-![CI](https://github.com/SpyHecker/VulnLab-X/actions/workflows/ci.yml/badge.svg)
-
 ---
 
 ## Quick start
@@ -142,7 +140,7 @@ Flags are static strings in this repository — they exist to prove an exploit w
 │   ├── uploads/              Seller uploads (git-ignored except .gitkeep)
 │   └── *.php                 Store front, auth, cart, checkout, orders, profile
 ├── Makefile                  make up / down / logs / reset / serve / lint / test / clean
-└── .github/workflows/ci.yml  PHP lint + smoke test on every push
+└── docs/ci-workflow.yml      GitHub Actions pipeline (copy it into .github/workflows/)
 ```
 
 ---
@@ -161,6 +159,15 @@ BASE_URL=http://localhost:8080 make test   # test an already running instance
 ```
 
 A reset is also one click away at <http://localhost:8080/init_db.php> → *Reset the whole lab*.
+
+### Continuous integration
+
+`docs/ci-workflow.yml` runs `make lint` and `make test` on every push. Copy it into place to enable
+it on GitHub:
+
+```bash
+mkdir -p .github/workflows && cp docs/ci-workflow.yml .github/workflows/ci.yml
+```
 
 ### Running the lab
 

@@ -65,7 +65,7 @@ were re-implemented on top of the new layout, tagged with ids and documented con
 | - | ------- | ---------- |
 | 15 | The README promised cart, checkout, orders, reviews, seller and admin features that did not exist | Implemented in `7258224` … `21648a8`; status is now a table in the README |
 | 16 | `solution.md` described the same four flaws in prose with no reproducible steps, and no ids connecting it to the code | Rewritten with ids, `curl` exploits, impact and patched code |
-| 17 | Nothing verified that the lab still works, or that a refactor had not accidentally fixed an exercise | `93b079d`: smoke suite + CI |
+| 17 | Nothing verified that the lab still works, or that a refactor had not accidentally fixed an exercise | `93b079d`: smoke suite + a ready-to-install CI pipeline |
 
 ---
 
@@ -80,7 +80,7 @@ orders      history, detail, cancellation
 admin       dashboard (cached), user & product management, activity log
 seller      dashboard, product editor, XML bulk import, image fetcher
 api         JSON cart, preferences (unserialize sink), internal endpoint, phpinfo
-tooling     Makefile, smoke suite, GitHub Actions workflow
+tooling     Makefile, smoke suite, GitHub Actions pipeline template
 docs        README, solution guide, this review
 ```
 
@@ -121,7 +121,7 @@ misconfiguration.
 | `1b7b1b9` | feat(admin): dashboard, user management, product management and activity log | The promised dashboard, plus the access control and log-based XSS exercises |
 | `0201d43` | feat(seller): seller dashboard, product editor, XML import and image fetcher | The seller role, XXE, unrestricted upload, SSRF and LFI |
 | `21648a8` | feat(api): JSON cart endpoints, preference cookies and a phpinfo page | Insecure deserialization and exposed diagnostics |
-| `93b079d` | test: add a smoke suite, a Makefile and a CI workflow | Nothing verified the lab; `make` gives a single entry point for the daily tasks |
+| `93b079d` | test: add a smoke suite, a Makefile and a CI pipeline template | Nothing verified the lab; `make` gives a single entry point for the daily tasks. `docs/ci-workflow.yml` is copied into `.github/workflows/` to enable it (the branch was prepared by an app token that may not create workflow files) |
 | *(this commit)* | docs: rewrite the README, the solution guide and add this review | Documentation had drifted from the code by an entire application |
 
 Each commit keeps the application runnable: no commit removes a feature added earlier, and the smoke
@@ -143,3 +143,4 @@ suite passes at the tip of the branch.
   path traversal, a GraphQL or REST API with mass assignment, an SSRF-filter bypass exercise.
 * A container healthpage that shows the seeded accounts.
 * Playwright tests for the JavaScript-free flows, so UI regressions are caught too.
+* Install the CI pipeline under `.github/workflows/` so the checks run on every pull request.
