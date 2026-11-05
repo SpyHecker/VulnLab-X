@@ -1,72 +1,191 @@
 <?php
-require_once 'config.php';
+/**
+ * Product detail page with the customer review list.
+ */
+require_once __DIR__ . '/config.php';
 
-$id = $_GET['id'] ?? null;
+$id = $_GET['id'] ?? '';
 $product = null;
+$reviews = [];
 $error = '';
+$reviewError = '';
 
-if ($id) {
+$author = current_user()['username'] ?? '';
+
+if ($id === '') {
+    $error = 'No product id was supplied.';
+} else {
     try {
-        // VULNERABILITY: SQL Injection
-        // We concatenate the id directly into the query
-        $query = "SELECT * FROM products WHERE id = " . $id;
-        $stmt = $db->query($query);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+        // VULNERABILITY [SQLI-2]: the id coming from the query string is
+        // concatenated into the query without casting or binding it.
+        $product = $db->query('SELECT * FROM products WHERE id = ' . $id)->fetch();
+
         if (!$product) {
-            $error = "Product not found.";
+            $error = 'Product not found.';
         }
     } catch (PDOException $e) {
-        $error = "Database Error: " . $e->getMessage();
+        // VULNERABILITY [MISC-1]: verbose database errors.
+        $error = 'Query failed: ' . $e->getMessage();
     }
-} else {
-    $error = "No product ID specified.";
 }
 
+if ($product && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $author = trim((string) ($_POST['author'] ?? $author));
+    $rating = (int) ($_POST['rating'] ?? 5);
+    $comment = (string) ($_POST['comment'] ?? '');
+    $userId = current_user()['id'] ?? 'NULL';
+
+    if ($author === '' || $comment === '') {
+        $reviewError = 'A name and a comment are required.';
+    } else {
+        try {
+            // VULNERABILITY [SQLI-6]: the review fields are concatenated into
+            // the insert statement.
+            $db->exec(
+                "INSERT INTO reviews (product_id, user_id, author, rating, comment)
+                 VALUES (" . (int) $product['id'] . ", $userId, '$author', $rating, '$comment')"
+            );
+
+            log_activity('review_created', 'Reviewed ' . $product['name']);
+            flash('Thanks for the review!', 'success');
+            redirect('/product.php?id=' . (int) $product['id'] . '#reviews');
+        } catch (PDOException $e) {
+            $reviewError = 'Could not save the review: ' . $e->getMessage();
+        }
+    }
+}
+
+if ($product) {
+    try {
+        $reviews = $db->query(
+            'SELECT * FROM reviews WHERE product_id = ' . (int) $product['id'] . ' ORDER BY id DESC'
+        )->fetchAll();
+    } catch (PDOException $e) {
+        $reviewError = 'Could not load the reviews: ' . $e->getMessage();
+    }
+}
+
+$averageRating = 0.0;
+
+if ($reviews) {
+    $averageRating = array_sum(array_column($reviews, 'rating')) / count($reviews);
+}
+
+$pageTitle = $product['name'] ?? 'Product';
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>VulnMart - Product</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app-container">
-    <header class="app-header">
-        <div class="logo">
-            <a href="/">🛒 VulnMart</a>
+
+<?php if ($error !== ''): ?>
+    <div class="alert alert--error"><?= h($error) ?></div>
+    <p><a class="button secondary" href="/">Back to the shop</a></p>
+<?php else: ?>
+    <p class="muted"><a href="/">← Back to the shop</a></p>
+
+    <article class="product-detail">
+        <div>
+            <?php
+            // VULNERABILITY [SSRF-2]: remote image URLs are rendered as-is. If
+            // the application ever fetched the image server side, the same
+            // field would be a server side request forgery primitive.
+            ?>
+            <img class="product-detail__image"
+                 src="<?= h(product_image_url($product['image'])) ?>"
+                 alt="<?= h($product['name']) ?>">
         </div>
-        <nav>
-            <a href="/">Home</a>
-            <a href="login.php">Login</a>
-        </nav>
-    </header>
 
-    <main class="main-content">
-        <?php if ($error): ?>
-            <p style="color:red;"><?php echo htmlspecialchars($error); ?></p>
-        <?php elseif ($product): ?>
-            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <h2><?php echo htmlspecialchars($product['name']); ?></h2>
-                <p class="price">$<?php echo htmlspecialchars($product['price']); ?></p>
-                <p><?php echo htmlspecialchars($product['description']); ?></p>
-                
-                <div style="margin-top: 2rem;">
-                    <!-- VULNERABILITY: IDOR/LFI/SSRF vector -->
-                    <!-- In a real app this might read a file from disk based on user input, or fetch a URL -->
-                    <!-- Here we just display the image name, but an attacker might try to load external URLs if the app fetches it server-side -->
-                    <img src="<?php echo htmlspecialchars(strpos($product['image'], 'http') === 0 ? $product['image'] : '/images/' . $product['image']); ?>" alt="Product Image" style="max-width: 100%; border-radius: 4px;">
-                </div>
-                
-                <button class="auto-width" style="margin-top: 2rem;">Add to Cart</button>
+        <div class="stack">
+            <div>
+                <h1><?= h($product['name']) ?></h1>
+                <p class="price"><?= money($product['price']) ?></p>
             </div>
-        <?php endif; ?>
-    </main>
 
-    <footer class="app-footer">
-        <p>VulnMart - Intentionally Vulnerable PHP Application.</p>
-    </footer>
-</div>
-</body>
-</html>
+            <p><?= h($product['description']) ?></p>
+
+            <div class="product-detail__meta">
+                <span class="badge"><?= h($product['category']) ?></span>
+                <span><?= (int) $product['stock'] ?> in stock</span>
+                <span><?= count($reviews) ?> review(s)</span>
+                <?php if ($reviews): ?>
+                    <span><span class="review__stars"><?= str_repeat('★', (int) round($averageRating)) ?></span> <?= number_format($averageRating, 1) ?>/5</span>
+                <?php endif; ?>
+                <span>Product #<?= (int) $product['id'] ?></span>
+            </div>
+
+            <form method="post" action="/cart.php" class="row" style="gap: 0.75rem; align-items: flex-end;">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                <?php
+                // VULNERABILITY [LOGIC-1]: the unit price is submitted by the
+                // browser and stored in the cart unchanged. Editing this value
+                // (or the hidden field below) sets your own price.
+                ?>
+                <input type="hidden" name="price" value="<?= h($product['price']) ?>">
+
+                <div class="form-group" style="margin: 0; width: 120px;">
+                    <label for="qty">Quantity</label>
+                    <input id="qty" type="number" name="qty" value="1">
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <button type="submit" class="auto-width">Add to cart</button>
+                </div>
+            </form>
+
+            <p class="form-hint">Free delivery on orders over <?= money(150) ?>.</p>
+        </div>
+    </article>
+
+    <section class="card" id="reviews" style="margin-top: 2rem;">
+        <div class="page-head">
+            <h2>Customer reviews</h2>
+            <span class="muted"><?= count($reviews) ?> total</span>
+        </div>
+
+        <?php if ($reviewError !== ''): ?>
+            <div class="alert alert--error"><?= h($reviewError) ?></div>
+        <?php endif; ?>
+
+        <?php if (!$reviews): ?>
+            <p class="muted">No reviews yet. Be the first to write one.</p>
+        <?php else: ?>
+            <?php foreach ($reviews as $review): ?>
+                <article class="review">
+                    <div class="review__head">
+                        <?php // VULNERABILITY [XSS-2]: the author name and the comment are stored and rendered without escaping. ?>
+                        <span class="review__author"><?= $review['author'] ?></span>
+                        <span class="review__stars"><?= str_repeat('★', max(0, min(5, (int) $review['rating']))) ?></span>
+                        <span class="review__date"><?= h($review['created_at']) ?></span>
+                    </div>
+                    <div class="review__body"><?= $review['comment'] ?></div>
+                </article>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+        <h3 style="margin-top: 2rem;">Write a review</h3>
+        <form method="post" action="/product.php?id=<?= (int) $product['id'] ?>#reviews">
+            <div class="row" style="align-items: flex-start;">
+                <div class="form-group" style="flex: 1 1 220px;">
+                    <label for="author">Your name</label>
+                    <input id="author" type="text" name="author" value="<?= h($author) ?>" required>
+                </div>
+                <div class="form-group" style="flex: 1 1 140px;">
+                    <label for="rating">Rating</label>
+                    <select id="rating" name="rating">
+                        <?php for ($stars = 5; $stars >= 1; $stars--): ?>
+                            <option value="<?= $stars ?>"><?= $stars ?> star<?= $stars > 1 ? 's' : '' ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="comment">Comment</label>
+                <textarea id="comment" name="comment" required></textarea>
+            </div>
+
+            <button type="submit" class="auto-width">Post review</button>
+        </form>
+    </section>
+<?php endif; ?>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>

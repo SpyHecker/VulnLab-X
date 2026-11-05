@@ -1,58 +1,103 @@
 <?php
-require_once 'config.php';
+/**
+ * Database installer / reset page.
+ *
+ * VULNERABILITY [MISC-2]: the installer stays reachable in production, needs no
+ * authentication and happily wipes every table when asked to reset the lab.
+ */
+require_once __DIR__ . '/config.php';
 
-echo "Initializing database...<br>";
+$results = [];
+$action = (string) ($_POST['action'] ?? '');
 
-try {
-    // Create users table
-    $db->exec("CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
-        email TEXT,
-        role TEXT DEFAULT 'customer'
-    )");
-
-    // Create products table
-    $db->exec("CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        description TEXT,
-        price REAL,
-        image TEXT
-    )");
-
-    // Check if products exist, if not seed
-    $stmt = $db->query("SELECT count(*) as count FROM products");
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($row['count'] == 0) {
-        $db->exec("INSERT INTO products (name, description, price, image) VALUES 
-            ('Laptop', 'High performance laptop', 999.99, 'laptop.jpg'),
-            ('Smartphone', 'Latest model smartphone', 699.99, 'phone.jpg'),
-            ('Headphones', 'Noise-cancelling headphones', 199.99, 'headphones.jpg')
-        ");
-        echo "Products seeded.<br>";
-    } else {
-        echo "Products already seeded.<br>";
+if ($action === 'install' || $action === 'reset') {
+    try {
+        $results = install_database($db, $action === 'reset');
+        log_activity('database_' . $action, 'Database ' . $action . 'ed from init_db.php');
+    } catch (PDOException $e) {
+        $results = ['Error: ' . $e->getMessage()];
     }
-
-    // Check if admin user exists, if not seed
-    $stmt = $db->query("SELECT count(*) as count FROM users WHERE username = 'admin'");
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($row['count'] == 0) {
-        // Plaintext password for vulnerability
-        $db->exec("INSERT INTO users (username, password, email, role) VALUES 
-            ('admin', 'supersecretadmin123', 'admin@vulnmart.local', 'admin')
-        ");
-        echo "Admin user created.<br>";
-    } else {
-        echo "Admin user already exists.<br>";
-    }
-
-    echo "Database initialization complete! <a href='/'>Go to homepage</a>";
-} catch (PDOException $e) {
-    echo "Error initializing database: " . $e->getMessage();
 }
+
+$tables = ['users', 'products', 'reviews', 'orders', 'order_items', 'coupons', 'logs'];
+$counts = [];
+
+foreach ($tables as $table) {
+    try {
+        $counts[$table] = (int) $db->query('SELECT COUNT(*) FROM ' . $table)->fetchColumn();
+    } catch (PDOException $e) {
+        $counts[$table] = '—';
+    }
+}
+
+$pageTitle = 'Database setup';
+require __DIR__ . '/includes/header.php';
 ?>
+
+<div class="page-head">
+    <h1>Database setup</h1>
+    <p class="muted monospace"><?= h(DB_FILE) ?></p>
+</div>
+
+<?php if ($results): ?>
+    <div class="alert alert--success">
+        <strong>Done.</strong>
+        <ul>
+            <?php foreach ($results as $line): ?>
+                <li><?= h($line) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
+
+<div class="card">
+    <h2>Current contents</h2>
+    <table class="table table--compact">
+        <thead>
+            <tr><th>Table</th><th>Rows</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($counts as $table => $count): ?>
+            <tr>
+                <td class="monospace"><?= h($table) ?></td>
+                <td><?= h($count) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <div class="row" style="margin-top: 1.5rem;">
+        <form method="post" action="/init_db.php">
+            <input type="hidden" name="action" value="install">
+            <button type="submit">Create missing data</button>
+        </form>
+
+        <form method="post" action="/init_db.php">
+            <input type="hidden" name="action" value="reset">
+            <button type="submit" class="danger">Reset the whole lab</button>
+        </form>
+
+        <a class="button secondary" href="/">Back to the shop</a>
+    </div>
+
+    <p class="form-hint">
+        Resetting drops every table and re-seeds the demo catalogue, accounts, coupons and orders.
+    </p>
+</div>
+
+<div class="card">
+    <h2>Demo accounts</h2>
+    <table class="table table--compact">
+        <thead>
+            <tr><th>Username</th><th>Password</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+            <tr><td class="monospace">admin</td><td class="monospace">supersecretadmin123</td><td><span class="badge badge--admin">admin</span></td></tr>
+            <tr><td class="monospace">alice</td><td class="monospace">alice123</td><td><span class="badge badge--customer">customer</span></td></tr>
+            <tr><td class="monospace">bob</td><td class="monospace">bob123</td><td><span class="badge badge--customer">customer</span></td></tr>
+            <tr><td class="monospace">seller</td><td class="monospace">seller123</td><td><span class="badge badge--seller">seller</span></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>
