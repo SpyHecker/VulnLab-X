@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // VULNERABILITY [LOGIC-1]: the order total is the sum of the prices
             // the browser put in the cart, so the customer decides what to pay.
-            // VULNERABILITY [LOGIC-5]: a negative total is accepted and later
+            // VULNERABILITY [LOGIC-4]: a negative total is accepted and later
             // turns into store credit instead of being rejected.
             $status = $total < 0 ? 'flagged' : 'paid';
 
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     (int) $item['qty'],
                 ]);
 
-                // VULNERABILITY [LOGIC-6]: stock is adjusted with a blind UPDATE
+                // VULNERABILITY [LOGIC-5]: stock is adjusted with a blind UPDATE
                 // outside any transaction. Two concurrent checkouts both pass
                 // the availability check and oversell, and a negative quantity
                 // simply increases the stock again.
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($total < 0) {
-                // VULNERABILITY [LOGIC-5]: paying a negative amount credits the
+                // VULNERABILITY [LOGIC-4]: paying a negative amount credits the
                 // customer's balance. Repeat the trick to drain the shop.
                 $db->exec('UPDATE users SET balance = balance + ' . abs($total) . ' WHERE id = ' . (int) $me['id']);
             }

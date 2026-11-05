@@ -2,7 +2,7 @@
 /**
  * Shared helpers used across the application.
  *
- * The comments tagged "VULNERABILITY [ID]" map to the write-up in
+ * The comments tagged with a "VULNERABILITY" id map to the write-up in
  * ../solution.md, so the lab and its documentation stay in sync.
  */
 
